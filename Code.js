@@ -4,10 +4,10 @@ const BREAKING_CHANGE_LABEL = 'breaking';
 const GET_OPTIONS = {};
 const BREAKING_CHANGE_REGEX = /##.?Breaking Change(?<change>[^#]*)/;
 
-
 // eslint-disable-next-line no-unused-vars
 function loadBreakingChanges() {
   let sheet = SpreadsheetApp.getActiveSheet();
+  sheet.clear();
 
   // Row headings
   if (sheet.getLastRow() < 1) {
@@ -19,8 +19,17 @@ function loadBreakingChanges() {
     ]);
   }
 
-  let repo = 'mod-circulation';
+  let repos = [
+    'mod-circulation',
+    'tech-council',
+  ];
 
+  repos.forEach(repo => {
+    loadFromRepo(repo);
+  });
+}
+
+function loadFromRepo(repo) {
   let url = BASE_URL + 'search/issues'
     + '?q=is:pr' 
       + '%20' + 'label:' + BREAKING_CHANGE_LABEL 
