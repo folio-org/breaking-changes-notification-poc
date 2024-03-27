@@ -2,8 +2,11 @@ const BASE_URL = 'https://api.github.com/';
 const OWNER = 'folio-org';
 const BREAKING_CHANGE_LABEL = 'breaking';
 const GET_OPTIONS = {};
+const POST_OPTIONS = { 'method': 'post', 'contentType': 'application/json' };
 const BREAKING_CHANGE_REGEX = /##.?Breaking Change(?<change>[^#]*)/;
 const INCLUDE_REPOS = ['tech-council', 'mod-c', 'mod-i'];
+
+const SLACK_URL = PropertiesService.getScriptProperties().getProperty("slack_url");
 
 // eslint-disable-next-line no-unused-vars
 function loadBreakingChanges() {
@@ -21,14 +24,24 @@ function loadBreakingChanges() {
     ]);
   }
 
+  // Check each repo
   let repos = loadReposList();
+  let reposWithPrs = [];
   repos.forEach(repo => {
     if (includeRepo(repo)) {
       Utilities.sleep(4000);
       console.log(`Loading from repo ${repo}`)
-      loadFromRepo(repo);
+      let foundPrs = loadFromRepo(repo);
+      if (foundPrs) {
+        reposWithPrs.concat(repo);
+      }
     }
   });
+
+  // Post to Slack
+  if (reposWithPrs.length) {
+    notifySlack(reposWithPrs, SpreadsheetApp.getActiveSpreadsheet().getUrl());
+  }
 }
 
 function loadReposList() {
@@ -63,11 +76,15 @@ function loadFromRepo(repo) {
   let rawResponse = UrlFetchApp.fetch(url, GET_OPTIONS);
   let response = JSON.parse(rawResponse.getContentText());
 
+  let foundPrs = false;
   let prs = response.items;
   prs.forEach(pr => {
     // console.log(pr);
     writePr(pr, repo);
+    foundPrs = true;
   });
+
+  return foundPrs;
 }
 
 function writePr(pr, repo) {
@@ -90,4 +107,14 @@ function parseBreakingChange(text) {
   let result = BREAKING_CHANGE_REGEX.exec(text);
   let change = result?.groups?.change ?? '';
   return change.trim();
+}
+
+function notifySlack(repos, url) {
+  let message = `<${url}|New breaking changes in repos>`;
+  for (const repo of repos) {
+    message += `\n- ${repo}`;
+  }
+  let payload = { 'text': message };
+  let options = { ...POST_OPTIONS, 'payload': JSON.stringify(payload)};
+  UrlFetchApp.fetch(SLACK_URL, options);
 }
