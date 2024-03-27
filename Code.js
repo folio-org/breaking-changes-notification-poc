@@ -19,14 +19,26 @@ function loadBreakingChanges() {
     ]);
   }
 
-  let repos = [
-    'mod-circulation',
-    'tech-council',
-  ];
-
+  let repos = loadReposList();
   repos.forEach(repo => {
+    Utilities.sleep(2000);
+    console.log(`Loading from repo ${repo}`)
     loadFromRepo(repo);
   });
+}
+
+function loadReposList() {
+  const PAGE_SIZE = 100;
+  let allRepoNames = [];
+  for(let i=1; i <= 5; i++) {
+    Utilities.sleep(4000);
+    let url = `${BASE_URL}orgs/${OWNER}/repos?per_page=${PAGE_SIZE}&page=${i}`;
+    let rawResponse = UrlFetchApp.fetch(url, GET_OPTIONS);
+    let response = JSON.parse(rawResponse.getContentText());
+    let repoNames = response.map(repo => repo.name);
+    allRepoNames = allRepoNames.concat(repoNames);
+  }
+  return allRepoNames;
 }
 
 function loadFromRepo(repo) {
