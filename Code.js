@@ -13,7 +13,8 @@ function loadBreakingChanges() {
   // Row headings
   if (sheet.getLastRow() < 1) {
     sheet.appendRow([
-      'Date',
+      'Created',
+      'State',
       'PR',
       'Title',
       'Breaking Change',
@@ -71,9 +72,9 @@ function loadFromRepo(repo) {
 
 function writePr(pr, repo) {
   let sheet = SpreadsheetApp.getActiveSheet();
-  let date = new Date().toJSON().slice(0, 10);
   sheet.appendRow([
-    date,
+    pr.created_at,
+    pr.state,
     pr.number,
     pr.title,
     parseBreakingChange(pr.body),
@@ -82,7 +83,7 @@ function writePr(pr, repo) {
     .setText(`${repo}-${pr.number}`)
     .setLinkUrl(pr.html_url)
     .build()
-  sheet.getRange(sheet.getLastRow(), 2, 1, 1).setRichTextValue(link);
+  sheet.getRange(sheet.getLastRow(), 3, 1, 1).setRichTextValue(link);
 }
 
 function parseBreakingChange(text) {
