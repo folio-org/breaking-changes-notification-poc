@@ -2,6 +2,8 @@ const BASE_URL = 'https://api.github.com/';
 const OWNER = 'folio-org';
 const BREAKING_CHANGE_LABEL = 'breaking';
 const GET_OPTIONS = {};
+const BREAKING_CHANGE_REGEX = /##.?Breaking Change(?<change>[^#]*)/;
+
 
 // eslint-disable-next-line no-unused-vars
 function loadBreakingChanges() {
@@ -12,7 +14,8 @@ function loadBreakingChanges() {
     sheet.appendRow([
       'Date',
       'PR',
-      'Title'
+      'Title',
+      'Breaking Change',
     ]);
   }
 
@@ -39,11 +42,18 @@ function writePr(pr, repo) {
   sheet.appendRow([
     date,
     pr.number,
-    pr.title
+    pr.title,
+    parseBreakingChange(pr.body),
   ]);
   let link = SpreadsheetApp.newRichTextValue()
     .setText(`${repo}-${pr.number}`)
     .setLinkUrl(pr.html_url)
     .build()
   sheet.getRange(sheet.getLastRow(), 2, 1, 1).setRichTextValue(link);
+}
+
+function parseBreakingChange(text) {
+  let result = BREAKING_CHANGE_REGEX.exec(text);
+  let change = result?.groups?.change ?? '';
+  return change.trim();
 }
